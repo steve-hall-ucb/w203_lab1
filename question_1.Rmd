@@ -1,0 +1,48 @@
+---
+title: 'Lab 1: Question 1'
+author: Ian Dela Cruz, Steve Hall, Fengjiao Sun
+output: pdf_document
+---
+
+```{r load packages, echo=TRUE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2) 
+library(haven) # to read SPSS data
+library(tidyverse) # if you want more, but still core, toolkit
+```
+
+```{r load raw data and select columns, echo=FALSE, warning=TRUE, message=FALSE}
+df_raw <- read_sav("anes_timeseries_2020_spss_20210211.sav")
+# select variables intending to vote (V201019 = 1); political party (V201018 = 1 or 2); age (V201506 or V201507x)
+myvars <- c("V201018", "V201507x")
+df_select <- df_raw[myvars]
+```
+
+```{r rename columns, echo=FALSE, warning=TRUE, message=FALSE}
+df <- df_select %>% 
+  rename(
+    party = V201018,
+    age = V201507x
+    )
+df <- df[df$party == 1 | df$party == 2 ,] # remove other parties
+df_clean <- df[df$age != -9, ] # remove records who refused to provide age
+```
+
+## Importance and Context
+Research question: Are Democratic voters older or younger than Republican voters in 2020?
+
+## Description of Data
+<!-- Explain how your research question is operationalized, including whether the variables you create are appropriate to study the concepts in question. --> 
+<!-- What are some basic features of the data distribution? --> 
+<!-- What changes do you make to the data and why? --> 
+
+## Most appropriate test 
+<!-- Explain which test is the most appropriate to answer your question and why it is the most appropriate --> 
+<!-- List every assumption that your test requires and evaluate it. -->
+
+# t.test(age ~ Dem/Rep, data = anes_data)
+# Cohen.D(age ~ Party, data = anes_data)
+
+## Test, results and interpretation
+<!-- What are the results of your test? --> 
+<!-- What do the results of this test mean? What is the practical significance? --> 

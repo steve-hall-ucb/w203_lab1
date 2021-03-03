@@ -12,23 +12,24 @@ raw_data <- read_sav("anes_timeseries_2020_spss_20210211.sav")
 ```
 
 ## Importance and Context
+
 Are Democratic voters more enthusiastic about Joe Biden or Kamala Harris?
 
-In early election year of 2020, Mr. Biden committed to pick a woman as his running mate. As widespread protests against racial injustice had swept the country in the aftermath of the killing of George Floyd, the demands to pick a black woman were growing louder. [NPR reported][1] that a poll in mid-June revealed 46% of Democrats said it was important for Biden to choose a candidate of color as his running mate, which was up from 36% in early April. Later in August, Biden announced Harris as his running mate.
+In early election year of 2020, Mr. Biden committed to pick a woman as his running mate. As widespread protests against racial injustice had swept the country in the aftermath of the killing of George Floyd, the demands to pick a black woman were growing louder. NPR reported^[https://www.npr.org/2020/06/12/875000650/pressure-grows-on-joe-biden-to-pick-a-black-woman-as-his-running-mate] that a poll in mid-June revealed 46% of Democrats said it was important for Biden to choose a candidate of color as his running mate, which was up from 36% in early April. Later in August, Biden announced Harris as his running mate.
 
-While it was generally believed that [Black women are successful in mobilizing others to support Democratic candidates.][2], are Democratic voters more enthusiastic about Harris? And would that elevate the favoritism of Biden? To answer these questions, we would first need to understand whether Democratic voters are more enthusiastic about Biden or Harris. The answer could provide some understanding on whether Harris was a winning choice of the running mate, and may also help to guide campaign strategies on promoting the candidates.
+It is believed that Black women are successful in mobilizing others to support Democratic candidates^[https://news.northwestern.edu/stories/2020/08/kamala-harris-vice-president/], but are Democratic voters more enthusiastic about Harris? And would that elevate the favoritism of Biden? To answer these questions, we would first need to understand whether Democratic voters are more enthusiastic about Biden or Harris. The answer could provide some understanding on whether Harris was a winning choice of the running mate, and may also help to guide campaign strategies on promoting the candidates.
 
-[1]:<https://www.npr.org/2020/06/12/875000650/pressure-grows-on-joe-biden-to-pick-a-black-woman-as-his-running-mate>
-[2]:<https://news.northwestern.edu/stories/2020/08/kamala-harris-vice-president/>
 
 ## Description of Data
+
 We will address this question using data from ANES 2020 Time Series Study Preliminary Release: Pre-Election Data. The 2020 ANES survey used a contactless, mixed-mode design that was created in response to challenges related to the COVID-19 pandemic. The face-to-face mode was dropped for 2020. Instead, a sequential mixed-mode design was implemented that included self-administered online surveys, live video interviews conducted online, and telephone interviews.
 
 The study object is Democratic voters, so we focused on V201018 PRE: PARTY OF REGISTRATION and select the samples whose answers are 1 (Democratic party). We intentionally did not include “voting status” V201020 as this may result in bias if the study only include samples who had voted by the time of study.
-To examine the enthusiasm about Joe Biden and Kamala Harris, we focused on V201151 PRE: FEELING THERMOMETER: JOE BIDEN, DEMOCRATIC PRESIDENTIAL CANDIDATE and V201153 PRE: FEELING THERMOMETER: KAMALA HARRIS, DEMOCRATIC VICE-PRESIDENTIAL CANDIDATE. The emotion intensity is reported on a Likert scale ranging from 0 to 100 with some predefined interval. There are also apparently "abnormal data" - 998, 999, -4, -9 value to denote other answers such as "Don't know", "Don't recognize", "Technical error", "Refused". We removed those values so that the leftover 0 to 100 are good ordinal scale.
-The remaining number of total valid responses yields a large enough number of samples (1788) for analysis.
+To examine the enthusiasm about Joe Biden and Kamala Harris, we focused on V201151 PRE: FEELING THERMOMETER: JOE BIDEN, DEMOCRATIC PRESIDENTIAL CANDIDATE and V201153 PRE: FEELING THERMOMETER: KAMALA HARRIS, DEMOCRATIC VICE-PRESIDENTIAL CANDIDATE. The emotion intensity is reported on a Likert scale ranging from 0 to 100 with some predefined interval. There are also apparently "abnormal data" - 998, 999, -4, -9 value to denote other answers such as "Don't know", "Don't recognize", "Technical error", "Refused". We removed those values, and the remaining number of total valid responses yields a large enough number of samples (1788) for analysis.
 
-The first thing is to explore the basic stats of the paired data sets, which includes median, mean and quartile. The median of the feeling thermometer scores are the same for Biden and Harris, both being 85. The mean score of Biden is 73.89, which is 0.71 higher than that of Harris, whose mean score is 73.18.
+The first thing is to explore the basic stats of the paired data sets, which includes median, mean and quartile. The median of the feeling thermometer scores are the same for Biden and Harris, both being 85. 
+The mean score of Biden is 73.89, which is 0.71 higher than that of Harris, whose mean score is 73.18.
+
 ```{r, echo=FALSE}
 question2 <- raw_data %>% select(starts_with("V201018"), 
                                  starts_with("V201151"),
@@ -40,23 +41,28 @@ question2 <-  filter(question2, Party == 1,
 question2 <- within(question2, Feeling_thermometer_difference_between_Biden_and_Harris <- Biden - Harris)
 ```
 
-```{r}
+**Stats Summary of Feeling Thermometer for Biden**
+```{r, echo=FALSE}
 summary(question2$Biden)
 ```
 
-```{r}
+**Stats Summary of Feeling Thermometer for Harris**
+```{r, echo=FALSE}
 summary(question2$Harris)
 ```
 
 Then we also looked into the distribution of the feeling thermometer difference between Biden and Harris, and found it is approximately symmetric.
-```{r}
+
+
+```{r, echo=FALSE, fig.width=10, fig.height=6}
 ggplot(question2, aes(Feeling_thermometer_difference_between_Biden_and_Harris)) +
   geom_histogram(fill = "white", color = "grey30", bins = 30) +
   ggtitle("Distribution of Feeling Thermometer Difference between Biden and Harris")
 ```
 
 ## Most appropriate test 
-We test whether the enthusiasm thermometer is higher for Biden or for Harris. Because these variables are measured on interval scale, a non-parametric test is appropriate. In particular, the variables are both measured on the same metric scale from 0 to 100. Furthermore, the data is paired, since the same individual measures their feeling for Biden and Harris. Therefore, we decided to use Wilcoxon Signed-Rank test.
+
+We test whether the enthusiasm thermometer is higher for Biden or for Harris. Because these variables are measured on interval scale, a non-parametric test is appropriate. In particular, the variables are both measured on the same metric scale from 0 to 100. Furthermore, the data is paired, since the same individual measures their feeling for Biden and Harris. Therefore, we decided to use **Wilcoxon Signed-Rank test**.
 
 The Wilcoxon Signed-Rank test requires the following assumptions to be true:
 
@@ -67,8 +73,10 @@ The Wilcoxon Signed-Rank test requires the following assumptions to be true:
 
 If the test were to **reject the null hypothesis**, we would conclude that among the Democratic voters who evaluated feeling thermometer values for Biden and Harris in 2020 have a measurable different enthusiasm about Joe Biden compared to Kamala Harris in 2020. If the test were to **fail to reject the null hypothesis**, we would conclude that the hypothesized effect does not exist or there is insufficient data to validate it.
 
+
 ## Test, results and interpretation
 
+Using the wilcox test function in R, we can find the test statistic and p-value for our sample, shown below.
 ```{r}
 wilcox.test(question2$Biden,question2$Harris,paired = TRUE)
 ```

@@ -1,0 +1,155 @@
+---
+title: 'Lab 1, Question 3'
+author: "Fengjiao Sun, Ian Dela Cruz, Steve Hall"
+output: pdf_document
+#  bookdown::pdf_document2: 
+#    toc: true
+---
+
+
+
+```{r initialize, echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2) 
+library(haven) # to read SPSS data
+library(tidyverse)
+library(rstatix) # to calculate effect size
+library(knitr)  # used to print pretty tables
+```
+
+```{r load, echo=FALSE, warning=TRUE, message=FALSE}
+df <- read_sav("anes_timeseries_2020_spss_20210211.sav")
+```
+
+```{r clean data, echo = FALSE}
+df <- df %>% 
+  mutate(
+    gov_rating = case_when(
+      V201145 == 1 ~ 'Approve', 
+      V201145 == 2 ~ 'Disapprove', 
+      V201145 == -8 ~ "Don't know", 
+      V201145 == -9 ~ 'Refused'), 
+    covid_test = case_when(
+      V201624 == 1 ~ ' Someone in my household tested positive', 
+      V201624 == 2 ~ 'No one tested positive', 
+      V201624 == -5 ~ ' Interview breakoff (sufficient partial IW)', 
+      V201624 == -9 ~ ' Refused'),
+    group = case_when(
+      V201624 == 1 ~ 'Group A', 
+      V201624 == 2 ~ 'Group B')
+  )
+```
+
+
+```{r subset and filter, echo = FALSE}
+df2 <- select(df, V201145, V201624, gov_rating, covid_test, group)
+
+data <- filter(
+  df2,
+  V201145 == 1 | V201145 == 2,
+  V201624 == 1 | V201624 == 2
+)
+
+
+data <- data[ , c("group", "covid_test", "V201624", "gov_rating", "V201145")] 
+```
+
+```{r create necessary columns, echo = FALSE}
+sorted <-data[order(data$V201145),]
+sorted$potentialRank <- NA
+sorted$potentialRank <- 1:nrow(sorted)
+
+# aggregate(sorted$potentialRank, by=list(sorted$gov_rating), FUN=mean) # used to validate W by hand.
+sorted <- sorted %>% 
+  mutate(
+    finalRank = case_when(
+      gov_rating == 'Approve' ~ 2518, 
+      gov_rating == 'Disapprove' ~ 6587)
+  )
+```
+
+## Importance and Context
+<!-- Explain why the reader should care about your research question. -->
+Are survey respondents who have had someone in their home infected by COVID-19 more likely to disapprove of the way their governor is handling the pandemic?
+
+The COVID-19 pandemic was (and continues to be) an unprecedented global health crisis. While work towards vaccine development and distribution continues, local governments have had to implement other methods of containment and mitigation to limit the human life impact of the virus, including policies like social distancing, mandatory business suspensions or closures, and work from home where possible. Because  policy is created at the state level, the requirements and implementation of these rules vary; they depend on location and political leaning of the local government and voter base. While the social and economic impacts of such decisions are acute, there may be downstream political impacts of these policies that may result from the COVID-19 pandemic.
+
+Specifically, will government response to the pandemic and voter perceptions of said response influence future voter behavior? Our research question aims to gain a deeper understanding of whether personal hardship directly attributable to the pandemic meaningfully impacts voters' assessment of their governor's pandemic response. An answer to this question would inform current and future communication strategies and priorities for government, and reveal the impacts of COVID-19 on voter behavior.
+
+
+## Description of Data
+<!-- Explain how your research question is operationalized, including whether the variables you create are appropriate to study the concepts in question. --> 
+We will address this question using data from the ANES 2020 Time Series Study Preliminary Release: Pre-Election Data. From the ANES Codebook: The 2020 ANES survey used a contactless, mixed-mode design that was created in response to challenges related to the COVID-19 pandemic. The face-to-face mode was dropped for 2020. Instead, a sequential mixed-mode design was implemented that included self-administered online surveys, live video interviews conducted online, and telephone interviews. See codebook for full details on collection methodology.
+
+
+<!-- What are some basic features of the data distribution? --> 
+The variables of interest are captured in V201145 (APPROVE OR DISAPPROVE R’S GOVERNOR HANDLING COVID-19) and V201624 (ANYONE IN HOUSEHOLD TESTED POS FOR COVID-19).
+
+
+<!-- What changes do you make to the data and why? --> 
+From this initial data, we choose to exclude the below survey responses:
+
+- V201145: Don't know, Refused
+- V201624: Refused, Interview breakoff (sufficient partial IW)
+
+The remaining number of total valid responses yields a large enough number of respondents (8138) that we can make further assumptions about normality.
+
+```{r plots2, message = FALSE, echo = FALSE}
+data.crosstab <- table(data$gov_rating, data$covid_test)
+kable(data.crosstab, caption = "Count of responses for gov_rating (row) and covid_test (col)")
+```
+
+Some features of the data are noteworthy:
+
+- The incidence of positive responses to question V201624 (covid_testing) is much smaller (284) than the incidence of negative responses (7894). We expect some sort of difference in distribution as the coronavirus, while contagious, has not infected the population equally.
+- Qualitatively, we can observe what looks to be a more even split of positive and negative responses to question V201145 (gov_rating) across the COVID positive than the COVID negative samples. Our research question aims to determine whether there is a statistical and practical basis for making this assertion.
+
+
+## Most appropriate test 
+<!-- Explain which test is the most appropriate to answer your question and why it is the most appropriate --> 
+
+To explore our research question, we can make the reasonable assumption that the two variables in question--whether a respondent approves of disapproves of their governor's COVID-19 response, and whether or not someone in their family has been infected with COIVD--are independent.  We can also observe that our variables are binary. We choose to classify V201624 (covid_testing) as categorical data, and the variable along which we form our groups for comparison. We also have the option to classify 201145 (gov_rating) as either metric or ordinal (since they can be arranged on an arbitrary scale). Our selection will influence which test we use to analyze.
+
+If we choose to classify 201145 as metric, we would use a two-sample t-test. We could, with reasonable confidence, make the assumptions about our data required for the statistical guarantees of the two-sample t-test. The most questionable assumption may be that of an underlying normal distribution (which is hard to qualitatively determine from a binary value), however we do have the Weak Law of Large Numbers working in our favor with our given sample size to prove this assumption true. However, our data also give us an option for another test-- without a requirement for normality--to yield statistical guarantees. Because of this, we will use that test as our primary test, and use the two-sample t-test as a means to check our findings.
+
+<!-- List every assumption that your test requires and evaluate it. -->
+We instead choose to classify 201145 as ordinal, which means a non-parametric test is required. The most appropriate statistical test is a Wilcoxon Rank-Sum Test (Hypothesis of Comparisons). The assumptions necessary for the Wilcoxon Rank-Sum Test (Hypothesis of Comparisons) to guarantee results are as follows:
+
+- Ordinal scale: The two selected values for covid_test are 'No one tested positive' and 'Someone in my household tested positive', and the two selected values for gov_rating are 'Approve' and 'Disapprove'. As such, the values for the two fields of interest are ordinal.
+
+- IID data: Even though there may be some correlation between the population in terms of who is affected by the COIVD 19 pandemic (due to the virus tendency to infect in geographic or social clusters), we assume that the samples, with respect to the COVID pandemic, are independent. Furthermore, the samples are drawn from the identical distribution. We can make the assumption that the distributions are identical and independently distributed.
+
+<!-- Discussion on significance of results. -->
+Our null hypothesis is $P(X>Y) = P(X<Y)$: The probability that a draw from $X$ ranks higher than a draw from $Y$ is the same as the probability that a draw from $Y$ ranks higher than a draw from $X$. If this test were to reject the null hypothesis, we would conclude that there is a statistically significant difference between voters' perception of their governor's handling of the COVID-19 pandemic and whether or not a person in their household had been infected. If the test were to fail to reject the null hypothesis then we could conclude there is no effect on perception of governor's response to COVID-19 and whether an immediate household member were infected.
+
+## Test, results and interpretation
+<!-- What are the results of your test? --> 
+Using the wilcox test function in R, we can find the test statistic and p-value for our sample, shown below.
+
+```{r runTest}
+wilcox.test(sorted$V201145 ~ sorted$group, data=sorted)
+```
+
+Given the p-value of $0.0377$, we can reject null hypothesis, meaning that there is a statistically significant difference between a voter's perception of his or her governor's handling of the COVID-19 pandemic and whether or not a household member had been diagnosed with the coronavirus.
+
+Finally, we can confirm this p-value seeing a convergence when using the two-sample t-test (this also proves that we could have used the two sample t-test as well!)
+
+```{r runTTest}
+t.test(sorted$V201145 ~ sorted$group, var.equal = TRUE)
+```
+
+
+<!-- What do the results of this test mean? What is the practical significance? -->
+
+We can also calculate the effect size in R:
+```{r effectSize}
+test <- wilcox.test(sorted$V201145 ~ sorted$group, data=sorted)
+zstat <- qnorm(test$p.value/2)
+abs(zstat)/sqrt(8138)
+```
+
+Here we can see that the calculated effect size is relatively small. What we can tell from this result is that, while the difference between the COVID positive and COVID negative groups is statistically significant, the relative impact of a COVID positive diagnosis does not seem to affect the voter's rating of his or her governor.
+
+Taken in conjunction with the statistical significance of the test ($0.03769$), we might be inclined to investigate further into whether there is in fact a difference between the two groups using a different sort of analysis or conclude that it is possible that the statistical significance is possibly due to a large sample.
+
+We briefly discuss the potential limitations and nuances that may be present in our analysis. This data were analyzed without looking at any other survey questions. We would want to perform further analysis to be aware of other possible correlations. For example, is it possible that there are subsets of the two covid_test groups that could also account for the difference, such as race, age, location, or income level? Are there other socio-economic, political, or cultural factors that might influence reporting of COVID-19 test results or governor approval? In order to form a more communication strategy, we would want to develop a more nuanced understanding of the sample that was surveyed.

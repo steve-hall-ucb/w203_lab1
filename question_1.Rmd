@@ -55,7 +55,7 @@ We will address this question using data from the American National Election Stu
 
 To answer our research question, we will only need to use two variables from the survey: party of registration (V201018) and respondent age (V201507x). Since we are only concerned with the age difference between Democrats and Republicans, we will exclude the other party categories such as 'independent' and 'other'. Similarly, we will also exclude records in which the respondent did not provide an age.  
 
-After sub-setting teh original data set, there were `r count_dems` registered Democrats and `r count_reps` registered Republicans surveyed with appropriate ages.
+After sub-setting the original data set, there were `r count_dems` registered Democrats and `r count_reps` registered Republicans surveyed with appropriate ages.
 
 It is also important to note that the age variable has been transformed by representing all ages over 80 with 80. This truncation of the respondent age variable forces us to make a couple assumptions that we will discuss later. 
 
@@ -74,9 +74,9 @@ p
 
 ## Most appropriate test 
 
-Typically, we would consider age as a nominal variable on a metric scale if it were not transformed. In this case, however, since the value of 80 represents all ages greater than 80, we argue that this truncated age distribution is now on an ordinal scale. In other words, we can no longer subtract 79 from 80 and say that is one year of age difference. All we know is that 80 is greater than 79. For that reason, we chose to run the Wilcoxon Rank Sum Test to compare the age of Democrats to the age of Republicans instead of a two sample t-test.
+Typically, we would consider age as a nominal variable on a metric scale if it were not transformed. In this case, however, since the value of 80 represents all ages greater than 80, we argue that this truncated age distribution is now on an ordinal scale. In other words, we can no longer subtract 79 from 80 and say that is one year of age difference. All we know is that 80 is greater than 79. For this reason, we chose to run the Wilcoxon Rank Sum Test to compare the age of Democrats to the age of Republicans instead of a two sample t-test.
 
-The **Wilcoxon Rank-Sum Test (Hypothesis of Comparisons)** makes two important assumptions:
+The **Wilcoxon Rank-Sum Test** makes two important assumptions:
 
 - **Ordinal scale**: The variable of interest is age and ranges from 18 to 80 (truncated). As discussed above, since the age variable has been transformed we assume it is ordinal in nature.
 
